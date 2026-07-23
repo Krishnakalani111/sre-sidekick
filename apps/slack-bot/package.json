@@ -1,0 +1,15 @@
+{
+  "name": "ai-sre-slack-bot",
+  "version": "0.1.0",
+  "description": "Slack interface for the AI SRE Sidekick (mock backend for now)",
+  "main": "src/app.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.21.4",
+    "dotenv": "^16.4.5"
+  }
+}
