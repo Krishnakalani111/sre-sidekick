@@ -1,0 +1,8 @@
+{
+  "name": "LogTraceCorrelationBroken",
+  "service": "payments",
+  "severity": "warning",
+  "source": "manual",
+  "description": "Error logs in payments are missing trace_id/span_id — cannot correlate logs to traces (otel-debug-lab scenario 13).",
+  "labels": { "env": "local", "scenario": "13-log-trace-correlation", "signal": "logs" }
+}

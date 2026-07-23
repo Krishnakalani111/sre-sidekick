@@ -1,0 +1,23 @@
+{
+  "name": "sre-sidekick",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "backend": "pnpm --filter @sre/backend dev",
+    "fake-mcp": "pnpm --filter @sre/fake-mcp dev",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "tsx": "^4.19.2",
+    "turbo": "2.9.6",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "HighErrorRate",
+  "service": "gateway",
+  "severity": "critical",
+  "source": "signoz",
+  "description": "gateway 5xx error rate > 10% for 5m",
+  "labels": { "env": "local", "team": "checkout" },
+  "threshold": { "metric": "error_rate", "op": ">", "value": 0.1 }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "P99LatencySpike",
+  "service": "orders",
+  "severity": "warning",
+  "source": "signoz",
+  "description": "orders p99 latency > 3s for 10m (suspected downstream payments slowdown)",
+  "labels": { "env": "local", "signal": "traces" },
+  "threshold": { "metric": "p99_latency_ms", "op": ">", "value": 3000 }
+}
