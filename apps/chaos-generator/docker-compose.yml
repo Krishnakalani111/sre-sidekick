@@ -1,0 +1,20 @@
+# AI SRE Sidekick - chaos generator (n8n only)
+#
+# Runs the n8n workflow that schedules traffic bursts and accepts chaos
+# injection via webhook. The workflow's "Run Agent" node and any telemetry
+# backend are bring-your-own — point them wherever you like after import.
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    ports: ["5679:5678"]
+    environment:
+      N8N_SECURE_COOKIE: "false"
+      WEBHOOK_URL: http://localhost:5679/
+      GENERIC_TIMEZONE: Asia/Kolkata
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  n8n_data:

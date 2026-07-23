@@ -47,8 +47,12 @@ packages/
   llm/          @sre/llm          Gemini / Grok / mock LLM clients
   prompts/      @sre/prompts      planner / diagnosis / rca prompt templates
 apps/
-  fake-mcp/     @sre/fake-mcp     MCP server: live SigNoz proxy OR canned fixtures
-  backend/      @sre/backend      Express webhook + investigation pipeline
+  fake-mcp/         @sre/fake-mcp   MCP server: live SigNoz proxy OR canned fixtures
+  backend/          @sre/backend    Express webhook + investigation pipeline
+  chaos-generator/                  n8n workflow (+ its own docker-compose) that
+                                     schedules traffic bursts and injects sustained
+                                     chaos via webhook; bring your own target
+                                     service + telemetry backend (see its README)
 ```
 
 ## Quick start (mock mode — no keys)
