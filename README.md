@@ -21,7 +21,7 @@ reasoning with an LLM to produce a root-cause **Diagnosis**.
      MCP Planner  (LLM decides which tools to call)
               │
               ▼
-     MCP Tool Executor  ──► SigNoz MCP Server (fake-mcp | real SigNoz MCP)
+     MCP Tool Executor  ──► SigNoz MCP Server (real, deployed via Foundry)
               │                     │
               │        ┌────────────┼────────────┐
               │        ▼            ▼            ▼
@@ -41,33 +41,48 @@ reasoning with an LLM to produce a root-cause **Diagnosis**.
 
 ```
 packages/
-  types/        @sre/types        shared contracts + canonical MCP tool schemas (source of truth)
-  signoz-rest/  @sre/signoz-rest  typed SigNoz query API client
-  mcp-client/   @sre/mcp-client   MCP transport + registry + executor + typed tool wrappers
+  types/        @sre/types        shared contracts + MCP tool types (source of truth)
+  mcp-client/   @sre/mcp-client   MCP client: transport + tool discovery + executor
   llm/          @sre/llm          Gemini / Grok / mock LLM clients
   prompts/      @sre/prompts      planner / diagnosis / rca prompt templates
 apps/
-  fake-mcp/         @sre/fake-mcp   MCP server: live SigNoz proxy OR canned fixtures
-  backend/          @sre/backend    Express webhook + investigation pipeline
-  chaos-generator/                  n8n workflow (+ its own docker-compose) that
-                                     schedules traffic bursts and injects sustained
-                                     chaos via webhook; bring your own target
-                                     service + telemetry backend (see its README)
+  backend/          @sre/backend    Express: /webhook/alert, /investigate, dashboard API
+  slack-bot/        @sre/slack-bot  Slack bot -> backend /investigate
+  frontend/                         dashboard UI (colleague)
+  chaos-generator/                  n8n workflow (+ its own docker-compose)
+otel-demo/                          instrumented checkout->payments demo (traces/logs/metrics)
+deploy/signoz/                      Foundry casting.yaml (+ .lock) — SigNoz + MCP server
+docker-compose.yml                  dockerized Postgres (investigation history)
 ```
 
-## Quick start (mock mode — no keys)
+## Quick start
 
 ```bash
+# 0. SigNoz + MCP server (needs a Docker host). Reproduce with Foundry:
+cd deploy/signoz && foundryctl cast -f casting.yaml     # SigNoz UI :8080, MCP :8000/mcp
+#    (or use an existing SigNoz; the MCP molding is enabled in casting.yaml)
+
+# 1. App
+cd sre-sidekick
 pnpm install
-pnpm fake-mcp     # terminal 1: MCP server on :8787
-pnpm backend      # terminal 2: Express on :3000
-curl -XPOST localhost:3000/webhook/alert -H content-type:application/json \
-  -d '{"name":"HighErrorRate","service":"gateway","severity":"critical"}'
+cp .env.example .env          # set SIGNOZ_API_KEY + an LLM key (or LLM_PROVIDER=mock)
+docker compose up -d          # dockerized Postgres (investigation history)
+pnpm backend                  # Express on :3000
+
+# 2. Fire an investigation
+curl -XPOST localhost:3000/investigate -H content-type:application/json \
+  -d '{"query":"checkout is throwing 5xx errors"}'
 ```
+
+Runs with **zero external keys** in mock mode: set `LLM_PROVIDER=mock` (and leave
+`SIGNOZ_API_KEY` empty) to exercise the whole pipeline offline with canned data.
 
 ## Going live
 
 1. Create a SigNoz API key (UI → Settings → API Keys), set `SIGNOZ_API_KEY`.
-2. Set `USE_FAKE_MCP=false` so fake-mcp proxies the real local SigNoz.
-3. Set `GEMINI_API_KEY` (or `XAI_API_KEY`) for real RCA.
-4. Trigger a genuine incident from `~/otel-debug-lab` and fire the alert.
+2. Set `GEMINI_API_KEY` (or `XAI_API_KEY`) + `LLM_PROVIDER=gemini`|`grok` for real RCA.
+3. Generate telemetry: run `otel-demo` (or your instrumented services) and toggle its incident.
+4. Fire `./scripts/fire-alert.sh` (or `@mention` the Slack bot).
+
+See `INTEGRATION.md` (client contracts), `apps/backend/DASHBOARD_API.md` (history/table API),
+and `deploy/README.md` (Foundry / Docker-host notes).
