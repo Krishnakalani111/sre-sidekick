@@ -28,6 +28,8 @@ const EnvSchema = z.object({
   DEEPGRAM_API_KEY: z.string().optional(),
   DEEPGRAM_MODEL: z.string().default("nova-3"),
   DEEPGRAM_LANGUAGE: z.string().default("multi"),
+  SLACK_BOT_TOKEN: z.string().optional(),
+  SLACK_DEFAULT_CHANNEL: z.string().optional(),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
 
@@ -51,10 +53,15 @@ export interface Config {
   deepgramApiKey?: string;
   deepgramModel: string;
   deepgramLanguage: string;
+  slackBotToken?: string;
+  slackDefaultChannel?: string;
+  /** True when a Slack bot token is set -> outbound Slack notifications enabled. */
+  slackConfigured: boolean;
   logLevel: "debug" | "info" | "warn" | "error";
 }
 
 const signozApiKey = coalesceEmpty(parsed.SIGNOZ_API_KEY);
+const slackBotToken = coalesceEmpty(parsed.SLACK_BOT_TOKEN);
 
 export const config: Config = {
   port: parsed.BACKEND_PORT,
@@ -69,6 +76,9 @@ export const config: Config = {
   deepgramApiKey: coalesceEmpty(parsed.DEEPGRAM_API_KEY),
   deepgramModel: parsed.DEEPGRAM_MODEL,
   deepgramLanguage: parsed.DEEPGRAM_LANGUAGE,
+  slackBotToken,
+  slackDefaultChannel: coalesceEmpty(parsed.SLACK_DEFAULT_CHANNEL),
+  slackConfigured: Boolean(slackBotToken),
   logLevel: parsed.LOG_LEVEL,
 };
 

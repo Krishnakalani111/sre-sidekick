@@ -10,6 +10,7 @@ import { webhookRouter } from "./routes/webhook";
 import { investigateRouter } from "./routes/investigate";
 import { investigationsRouter } from "./routes/investigations";
 import { sttRouter } from "./routes/stt";
+import { notifyRouter } from "./routes/notify";
 import { logger } from "./logger";
 
 export function buildApp(): Express {
@@ -29,6 +30,7 @@ export function buildApp(): Express {
   app.use(investigateRouter);
   app.use(investigationsRouter);
   app.use(sttRouter);
+  app.use(notifyRouter);
 
   // 404 fallback.
   app.use((_req: Request, res: Response) => {

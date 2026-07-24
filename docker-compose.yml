@@ -52,6 +52,10 @@ services:
       GROK_MODEL: ${GROK_MODEL:-grok-2-latest}
       INVESTIGATION_MAX_STEPS: ${INVESTIGATION_MAX_STEPS:-4}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Outbound Slack notifications (POST /notify/slack). Without a token those
+      # endpoints return 503; everything else keeps working.
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_DEFAULT_CHANNEL: ${SLACK_DEFAULT_CHANNEL:-}
     ports:
       - "3000:3000"
     extra_hosts:
