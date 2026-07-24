@@ -50,6 +50,10 @@ apps/
   slack-bot/        @sre/slack-bot  Slack bot -> backend /investigate
   frontend/                         dashboard UI (colleague)
   chaos-generator/                  n8n workflow (+ its own docker-compose)
+  n8n-workflow/                     n8n workflow (+ its own docker-compose):
+                                    Natural Language -> SQL. Webhook -> LLM
+                                    writes SQL -> Postgres executes it -> LLM
+                                    summarizes the rows (see its README)
 otel-demo/                          instrumented checkout->payments demo (traces/logs/metrics)
 deploy/signoz/                      Foundry casting.yaml (+ .lock) — SigNoz + MCP server
 docker-compose.yml                  dockerized Postgres (investigation history)
