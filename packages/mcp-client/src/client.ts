@@ -22,8 +22,29 @@ export class RealMcpClient implements McpClient {
 
   async connect(): Promise<void> {
     if (this.connected) return;
-    await this.client.connect(this.transport);
-    this.connected = true;
+    try {
+      await this.client.connect(this.transport);
+      this.connected = true;
+    } catch (err) {
+      // The SDK may have half-attached the transport before the handshake
+      // failed (e.g. server briefly unreachable at startup). Rebuild both so a
+      // later retry starts clean instead of throwing "Already connected to a
+      // transport."
+      try {
+        await this.client.close();
+      } catch {
+        /* ignore */
+      }
+      this.client = new Client({ name: "sre-sidekick", version: "0.0.0" });
+      this.transport = buildTransport(this.config);
+      this.connected = false;
+      throw err;
+    }
+  }
+
+  /** Ensure a live connection, retrying once (used lazily before a call). */
+  private async ensureConnected(): Promise<void> {
+    if (!this.connected) await this.connect();
   }
 
   isConnected(): boolean {
@@ -32,6 +53,7 @@ export class RealMcpClient implements McpClient {
 
   /** Discover the server's tool catalog and cache it. */
   async listTools(): Promise<DiscoveredTool[]> {
+    await this.ensureConnected();
     const res = await this.client.listTools();
     this.tools = res.tools.map((t) => ({
       name: t.name,
@@ -49,6 +71,7 @@ export class RealMcpClient implements McpClient {
   async callTool(name: string, input: Record<string, unknown>): Promise<ToolResult> {
     const started = Date.now();
     try {
+      await this.ensureConnected();
       const res = (await this.client.callTool({
         name,
         arguments: input,

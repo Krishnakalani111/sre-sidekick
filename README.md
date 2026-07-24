@@ -62,12 +62,12 @@ docker-compose.yml                  dockerized Postgres (investigation history)
 cd deploy/signoz && foundryctl cast -f casting.yaml     # SigNoz UI :8080, MCP :8000/mcp
 #    (or use an existing SigNoz; the MCP molding is enabled in casting.yaml)
 
-# 1. App
+# 1. App — all in Docker (postgres + backend)
 cd sre-sidekick
-pnpm install
 cp .env.example .env          # set SIGNOZ_API_KEY + an LLM key (or LLM_PROVIDER=mock)
-docker compose up -d          # dockerized Postgres (investigation history)
-pnpm backend                  # Express on :3000
+docker compose up -d          # postgres + backend on :3000
+docker compose --profile slack up -d   # ...also start the Slack bot
+#   dev alternative (hot Node):  docker compose up -d postgres && pnpm install && pnpm backend
 
 # 2. Fire an investigation
 curl -XPOST localhost:3000/investigate -H content-type:application/json \
