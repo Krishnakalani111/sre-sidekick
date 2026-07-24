@@ -6,19 +6,19 @@ observability backend with:
 
 ```bash
 cd deploy/signoz
-foundry cast            # expands casting.yaml -> pours/deployment/compose.yaml
+foundryctl cast -f casting.yaml   # gauge (env check) -> forge (render pours/) -> cast (start)
 ```
 
 This needs a **Docker host** (a VM / EC2, or a laptop with Docker) — SigNoz runs
 ClickHouse + collector + query service via docker-compose. It is **not**
 serverless; give it ~4–8 GB RAM and a data volume.
 
-> **MCP server note:** `pours/deployment/compose.yaml` in this repo already
-> includes the `signoz-mcp-server` service (HTTP `:8000/mcp`) that the Sidekick
-> queries. A *fresh* `foundry cast` regenerates the base SigNoz compose without
-> it, so either run the committed compose as-is, or re-add the `signoz-mcp-server`
-> service after casting. Set `SIGNOZ_API_KEY` in the environment before bringing
-> it up (`export SIGNOZ_API_KEY=...`); the resolved `.env` is gitignored.
+> **MCP server:** enabled in `casting.yaml` via `spec.mcp.spec.enabled: true`, so
+> `foundryctl cast` deploys `signoz-mcp-server` (HTTP `:8000/mcp`) automatically.
+> Foundry auto-wires `TRANSPORT_MODE=http`, `MCP_SERVER_PORT=8000`, and `SIGNOZ_URL`
+> to the co-located SigNoz. The Sidekick authenticates per-request with a
+> `SIGNOZ-API-KEY` header (create the key in SigNoz UI → Settings → API Keys and
+> set it as the backend's `SIGNOZ_API_KEY`) — no secret is stored in the manifests.
 
 ## The Sidekick app
 - **Postgres** (investigation history): `docker compose up -d` at the repo root.

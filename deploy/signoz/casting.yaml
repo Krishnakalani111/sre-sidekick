@@ -6,3 +6,11 @@ spec:
   deployment:
     flavor: compose
     mode: docker
+  # Enable the SigNoz MCP server (signoz-mcp-server) that the AI SRE Sidekick
+  # drives. Foundry auto-wires TRANSPORT_MODE=http, MCP_SERVER_PORT=8000, and
+  # SIGNOZ_URL to the co-located SigNoz. Clients authenticate per-request with a
+  # SIGNOZ-API-KEY header (created in SigNoz UI -> Settings -> API Keys), so no
+  # secret is stored here.
+  mcp:
+    spec:
+      enabled: true
