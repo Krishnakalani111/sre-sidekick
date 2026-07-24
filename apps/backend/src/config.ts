@@ -25,6 +25,9 @@ const EnvSchema = z.object({
   LLM_PROVIDER: z.string().default("auto"),
   GEMINI_API_KEY: z.string().optional(),
   XAI_API_KEY: z.string().optional(),
+  DEEPGRAM_API_KEY: z.string().optional(),
+  DEEPGRAM_MODEL: z.string().default("nova-3"),
+  DEEPGRAM_LANGUAGE: z.string().default("multi"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
 
@@ -45,6 +48,9 @@ export interface Config {
   llmProvider: string;
   geminiApiKey?: string;
   xaiApiKey?: string;
+  deepgramApiKey?: string;
+  deepgramModel: string;
+  deepgramLanguage: string;
   logLevel: "debug" | "info" | "warn" | "error";
 }
 
@@ -60,6 +66,9 @@ export const config: Config = {
   llmProvider: parsed.LLM_PROVIDER,
   geminiApiKey: coalesceEmpty(parsed.GEMINI_API_KEY),
   xaiApiKey: coalesceEmpty(parsed.XAI_API_KEY),
+  deepgramApiKey: coalesceEmpty(parsed.DEEPGRAM_API_KEY),
+  deepgramModel: parsed.DEEPGRAM_MODEL,
+  deepgramLanguage: parsed.DEEPGRAM_LANGUAGE,
   logLevel: parsed.LOG_LEVEL,
 };
 

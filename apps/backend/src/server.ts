@@ -9,6 +9,7 @@ import { healthRouter } from "./routes/health";
 import { webhookRouter } from "./routes/webhook";
 import { investigateRouter } from "./routes/investigate";
 import { investigationsRouter } from "./routes/investigations";
+import { sttRouter } from "./routes/stt";
 import { logger } from "./logger";
 
 export function buildApp(): Express {
@@ -27,6 +28,7 @@ export function buildApp(): Express {
   app.use(webhookRouter);
   app.use(investigateRouter);
   app.use(investigationsRouter);
+  app.use(sttRouter);
 
   // 404 fallback.
   app.use((_req: Request, res: Response) => {
