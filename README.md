@@ -45,8 +45,10 @@ packages/
   mcp-client/   @sre/mcp-client   MCP client: transport + tool discovery + executor
   llm/          @sre/llm          Gemini / Grok / mock LLM clients
   prompts/      @sre/prompts      planner / diagnosis / rca prompt templates
+  stt/          @sre/stt          speech-to-text (Deepgram) for the voice path
+  slack/        @sre/slack        outbound Slack notifications (see its README)
 apps/
-  backend/          @sre/backend    Express: /webhook/alert, /investigate, dashboard API
+  backend/          @sre/backend    Express: /webhook/alert, /investigate, /notify/slack, dashboard API
   slack-bot/        @sre/slack-bot  Slack bot -> backend /investigate
   frontend/                         dashboard UI (colleague)
   chaos-generator/                  n8n workflow (+ its own docker-compose)

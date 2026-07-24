@@ -82,6 +82,22 @@ URL must be `http://host.docker.internal:3000/webhook/alert` (not `localhost`).
 
 ### `GET /investigations/:id` — fetch a stored result. `GET /health` — liveness.
 
+### `POST /notify/slack[/*]`  → OUTBOUND to Slack
+The reverse direction: any service (a cron/anomaly watcher, another team's
+service) fires a Slack message. Channel is optional — falls back to
+`SLACK_DEFAULT_CHANNEL`. Returns `200 { ok, channel, ts }`; `503` if no
+`SLACK_BOT_TOKEN` is set.
+```bash
+curl -XPOST localhost:3000/notify/slack -H content-type:application/json \
+  -d '{"text":"checkout p99 anomaly detected"}'
+curl -XPOST localhost:3000/notify/slack/alert     -d '{"alert":{...}}'      -H content-type:application/json
+curl -XPOST localhost:3000/notify/slack/diagnosis -d '{"diagnosis":{...}}'  -H content-type:application/json
+```
+Monorepo TS code can skip HTTP and `import { createSlackClient } from "@sre/slack"`
+directly. Full usage + function list: `packages/slack/README.md`.
+> Set `SLACK_BOT_TOKEN` + `SLACK_DEFAULT_CHANNEL` and **invite the bot to the
+> channel** (`/invite @bot`) — `chat:write` only posts to channels it's in.
+
 ## 3. Test each layer yourself
 | Layer | Command / action | Expect |
 |-------|------------------|--------|
