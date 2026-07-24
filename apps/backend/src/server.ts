@@ -6,6 +6,7 @@ import express from "express";
 import type { Express, NextFunction, Request, Response } from "express";
 import { healthRouter } from "./routes/health";
 import { webhookRouter } from "./routes/webhook";
+import { investigateRouter } from "./routes/investigate";
 import { investigationsRouter } from "./routes/investigations";
 import { logger } from "./logger";
 
@@ -22,6 +23,7 @@ export function buildApp(): Express {
 
   app.use(healthRouter);
   app.use(webhookRouter);
+  app.use(investigateRouter);
   app.use(investigationsRouter);
 
   // 404 fallback.

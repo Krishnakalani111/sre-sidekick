@@ -1,6 +1,7 @@
 require("dotenv").config();
 const { App } = require("@slack/bolt");
-const backend = require("./mockBackend");
+// Real Sidekick backend (POST /investigate). Set USE_MOCK_BACKEND=1 to use canned data.
+const backend = require("./backendClient");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
