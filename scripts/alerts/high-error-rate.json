@@ -1,9 +1,9 @@
 {
-  "name": "HighErrorRate",
-  "service": "gateway",
+  "name": "CheckoutHighErrorRate",
+  "service": "checkout",
   "severity": "critical",
   "source": "signoz",
-  "description": "gateway 5xx error rate > 10% for 5m",
-  "labels": { "env": "local", "team": "checkout" },
-  "threshold": { "metric": "error_rate", "op": ">", "value": 0.1 }
+  "description": "checkout 5xx error rate > 10% for 5m (users seeing failed checkouts)",
+  "labels": { "env": "local", "team": "checkout", "signal": "traces" },
+  "threshold": { "metric": "error_rate", "op": ">", "value": 0.1, "observed": 0.23 }
 }
