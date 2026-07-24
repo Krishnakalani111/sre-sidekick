@@ -1,0 +1,32 @@
+# OpenTelemetry Collector Configuration
+# Receives traces from n8n and forwards them to SigNoz
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  # Export traces to SigNoz
+  otlp_http:
+    endpoint: http://signoz:4318
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_http]

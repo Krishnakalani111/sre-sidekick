@@ -1,0 +1,10 @@
+<clickhouse>
+    <listen_host>0.0.0.0</listen_host>
+    <listen_try>0</listen_try>
+    <interserver_http_host>0.0.0.0</interserver_http_host>
+    <interserver_http_port>9009</interserver_http_port>
+    <tcp_port>9000</tcp_port>
+    <http_port>8123</http_port>
+    <mysql_port>9004</mysql_port>
+    <postgresql_port>9005</postgresql_port>
+</clickhouse>

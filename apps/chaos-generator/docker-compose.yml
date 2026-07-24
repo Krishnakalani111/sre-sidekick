@@ -3,6 +3,11 @@
 # Runs the n8n workflow that schedules traffic bursts and accepts chaos
 # injection via webhook. The workflow's "Run Agent" node and any telemetry
 # backend are bring-your-own — point them wherever you like after import.
+#
+# OpenTelemetry integration:
+# - n8n exports traces to OpenTelemetry Collector
+# - OpenTelemetry Collector forwards traces to SigNoz
+# - SigNoz provides the observability backend
 
 services:
   n8n:
@@ -12,9 +17,84 @@ services:
       N8N_SECURE_COOKIE: "false"
       WEBHOOK_URL: http://localhost:5679/
       GENERIC_TIMEZONE: Asia/Kolkata
+      # OpenTelemetry configuration for n8n
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_INSECURE: true
+      OTEL_SERVICE_NAME: n8n-chaos-generator
+      OTEL_RESOURCE_ATTRIBUTES: service.name=n8n-chaos-generator,service.version=1.0.0
     volumes:
       - n8n_data:/home/node/.n8n
     restart: unless-stopped
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: signoz/signoz-otel-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+    restart: unless-stopped
+    depends_on:
+      - signoz
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9001:9000"   # Native interface (mapped to 9001 to avoid conflict with frontend)
+    environment:
+      - CLICKHOUSE_DB=signoz
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=1234
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/custom.xml:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  signoz:
+    image: signoz/signoz:latest
+    command: "./signoz server"
+    container_name: signoz-query-service
+    ports:
+      - "8080:8080"   # SigNoz API
+      - "4320:4317"
+      - "4321:4318"
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=9000
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=1234
+      - CLICKHOUSE_DATABASE=signoz
+      - SIGNOZ_TELEMETRY_ENABLED=true
+    volumes:
+      - signoz_data:/var/lib/signoz
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  # signoz-frontend:
+  #   image: signoz/frontend:latest
+  #   ports:
+  #     - "9000:3300"   # SigNoz frontend
+  #   environment:
+  #     - VITE_SIGNOZ_API_URL=http://localhost:8080
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - signoz
 
 volumes:
   n8n_data:
+  clickhouse_data:
+  signoz_data:
