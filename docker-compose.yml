@@ -1,0 +1,28 @@
+# Dockerized Postgres for the Sidekick's investigation history
+# (detected issue -> RCA -> accuracy), which powers the dashboard table.
+#
+#   docker compose up -d
+#
+# The backend reads DATABASE_URL (default matches the values below).
+services:
+  postgres:
+    image: postgres:16
+    container_name: sidekick-postgres
+    environment:
+      POSTGRES_USER: sidekick
+      POSTGRES_PASSWORD: sidekick
+      POSTGRES_DB: sidekick
+    ports:
+      - "5432:5432"
+    volumes:
+      - sidekick-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sidekick -d sidekick"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  sidekick-pgdata:
+    name: sidekick-pgdata

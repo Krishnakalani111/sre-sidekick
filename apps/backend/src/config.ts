@@ -18,6 +18,7 @@ dotenv.config({ path: resolve(repoRoot, ".env") });
 
 const EnvSchema = z.object({
   BACKEND_PORT: z.coerce.number().int().positive().default(3000),
+  DATABASE_URL: z.string().default("postgres://sidekick:sidekick@localhost:5432/sidekick"),
   MCP_SERVER_URL: z.string().url().default("http://localhost:8000/mcp"),
   SIGNOZ_API_KEY: z.string().optional(),
   INVESTIGATION_MAX_STEPS: z.coerce.number().int().positive().default(6),
@@ -35,6 +36,7 @@ const parsed = EnvSchema.parse(process.env);
 
 export interface Config {
   port: number;
+  databaseUrl: string;
   mcpServerUrl: string;
   signozApiKey?: string;
   /** True when no SigNoz API key is set -> MCP client serves fixtures. */
@@ -50,6 +52,7 @@ const signozApiKey = coalesceEmpty(parsed.SIGNOZ_API_KEY);
 
 export const config: Config = {
   port: parsed.BACKEND_PORT,
+  databaseUrl: parsed.DATABASE_URL,
   mcpServerUrl: parsed.MCP_SERVER_URL,
   signozApiKey,
   mcpMock: !signozApiKey,

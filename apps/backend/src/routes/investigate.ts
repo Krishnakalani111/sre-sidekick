@@ -14,6 +14,7 @@ import type { Diagnosis, Evidence } from "@sre/types";
 import { normalizeAlert } from "../modules/alerts/normalize";
 import { runInvestigation } from "../modules/investigations/orchestrator";
 import { investigationStore } from "../modules/investigations/store";
+import { saveInvestigation } from "../db/investigationsRepo";
 import { logger } from "../logger";
 
 export const investigateRouter = Router();
@@ -71,6 +72,7 @@ investigateRouter.post("/investigate", async (req: Request, res: Response) => {
 
     const result = await runInvestigation(alert);
     investigationStore.save(alert.id, result);
+    await saveInvestigation(result, { issue: query });
 
     res.status(200).json({
       investigationId: alert.id,
