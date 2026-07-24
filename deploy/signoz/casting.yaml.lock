@@ -301,7 +301,7 @@ spec:
       cluster:
         replicas: 1
       config: {}
-      enabled: false
+      enabled: true
       image: signoz/signoz-mcp-server:latest
       version: latest
     status:
