@@ -6,7 +6,17 @@ import type {
 import { extractJson } from "./json";
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const DEFAULT_MODEL = "gemini-2.0-flash";
+const DEFAULT_MODEL = "gemini-2.5-flash";
+const MAX_RETRIES = 3;
+const MAX_BACKOFF_MS = 35_000;
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** Pull the server-suggested retry delay (e.g. "29.5s") out of a 429 body. */
+function parseRetryDelayMs(body: string): number | undefined {
+  const m = body.match(/"retryDelay"\s*:\s*"([0-9.]+)s"/) || body.match(/retry in ([0-9.]+)s/i);
+  return m ? Math.ceil(parseFloat(m[1]) * 1000) : undefined;
+}
 
 interface GeminiPart {
   text?: string;
@@ -66,14 +76,23 @@ export class GeminiClient implements LLMClient {
     if (Object.keys(generationConfig).length > 0) body.generationConfig = generationConfig;
 
     const url = `${BASE_URL}/${encodeURIComponent(this.model)}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
 
-    if (!res.ok) {
+    let res!: Response;
+    for (let attempt = 0; ; attempt++) {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) break;
+
       const snippet = (await res.text().catch(() => "")).slice(0, 500);
+      // Retry on transient rate-limit / overload, honoring the server's delay.
+      if ((res.status === 429 || res.status === 503) && attempt < MAX_RETRIES) {
+        const wait = Math.min(parseRetryDelayMs(snippet) ?? 2000 * 2 ** attempt, MAX_BACKOFF_MS);
+        await sleep(wait);
+        continue;
+      }
       throw new Error(`Gemini request failed: ${res.status} ${res.statusText} — ${snippet}`);
     }
 

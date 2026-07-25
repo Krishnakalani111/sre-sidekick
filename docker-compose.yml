@@ -1,0 +1,83 @@
+# Full app stack for the AI SRE Sidekick.
+#
+#   docker compose up -d               # postgres + backend
+#   docker compose --profile slack up -d   # + slack-bot
+#
+# Reads secrets from a repo-root .env (gitignored): SIGNOZ_API_KEY, GEMINI_API_KEY
+# or XAI_API_KEY, SLACK_* . With none set, the backend runs in mock mode.
+#
+# NOTE: SigNoz + the SigNoz MCP server are deployed separately via Foundry
+# (see deploy/signoz). The backend reaches the MCP server on the host at
+# host.docker.internal:8000.
+services:
+  postgres:
+    image: postgres:16
+    container_name: sidekick-postgres
+    environment:
+      POSTGRES_USER: sidekick
+      POSTGRES_PASSWORD: sidekick
+      POSTGRES_DB: sidekick
+    ports:
+      - "5432:5432"
+    volumes:
+      - sidekick-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sidekick -d sidekick"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: sidekick-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      BACKEND_PORT: 3000
+      DATABASE_URL: postgres://sidekick:sidekick@postgres:5432/sidekick
+      # Inside the container, the host's SigNoz MCP is reached via
+      # host.docker.internal (NOT localhost). Hardcoded so a host-oriented
+      # .env (localhost:8000) can't clobber it. Override with MCP_URL if the
+      # MCP server runs elsewhere / on a shared docker network.
+      MCP_SERVER_URL: ${MCP_URL:-http://host.docker.internal:8000/mcp}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      SIGNOZ_API_KEY: ${SIGNOZ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      GROK_MODEL: ${GROK_MODEL:-grok-2-latest}
+      INVESTIGATION_MAX_STEPS: ${INVESTIGATION_MAX_STEPS:-4}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Outbound Slack notifications (POST /notify/slack). Without a token those
+      # endpoints return 503; everything else keeps working.
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_DEFAULT_CHANNEL: ${SLACK_DEFAULT_CHANNEL:-}
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  slack-bot:
+    build:
+      context: ./apps/slack-bot
+      dockerfile: Dockerfile
+    container_name: sidekick-slack-bot
+    profiles: ["slack"]
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:3000
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_APP_TOKEN: ${SLACK_APP_TOKEN:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      USE_MOCK_BACKEND: ${USE_MOCK_BACKEND:-0}
+    restart: unless-stopped
+
+volumes:
+  sidekick-pgdata:
+    name: sidekick-pgdata

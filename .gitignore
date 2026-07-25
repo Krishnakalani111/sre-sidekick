@@ -7,3 +7,6 @@ dist/
 .DS_Store
 coverage/
 *.tsbuildinfo
+
+# never commit the resolved SigNoz deploy env (contains SIGNOZ_API_KEY)
+deploy/**/pours/**/.env

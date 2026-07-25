@@ -1,0 +1,221 @@
+{
+  "name": "NL -> SQL (Postgres + Gemini)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nl2sql",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f1000000-0000-4000-8000-000000000001",
+      "name": "Ask Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1400, 0],
+      "webhookId": "f2000000-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// POST /webhook/nl2sql  { \"question\": \"...\" }\nconst body = $input.first().json.body || $input.first().json || {};\nconst question = String(body.question || '').trim();\n\nreturn [{ json: { question } }];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000002",
+      "name": "Read Question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1200, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT table_name, column_name, data_type\nFROM information_schema.columns\nWHERE table_schema = 'public'\nORDER BY table_name, ordinal_position;",
+        "options": {}
+      },
+      "id": "f1000000-0000-4000-8000-000000000003",
+      "name": "Introspect Schema",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-1000, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Stage: turn the live information_schema rows into a compact schema\n// description, then build the actual prompt asking the LLM to write SQL.\n// Grounding the prompt in the REAL current schema (not a hardcoded one)\n// is what keeps this working if the database changes later.\nconst rows = $input.all().map((i) => i.json);\nconst byTable = {};\nfor (const r of rows) {\n  byTable[r.table_name] = byTable[r.table_name] || [];\n  byTable[r.table_name].push(`${r.column_name} ${r.data_type}`);\n}\nconst schema = Object.entries(byTable)\n  .map(([table, cols]) => `${table}(${cols.join(', ')})`)\n  .join('\\n');\n\nconst question = $('Read Question').first().json.question;\n\nconst prompt = `You are a PostgreSQL expert. Given this schema:\\n\\n${schema}\\n\\n` +\n  'Write a single read-only SQL query that answers the question below.\\n' +\n  'Rules:\\n' +\n  '- Only a SELECT statement. Never INSERT/UPDATE/DELETE/DROP/ALTER/TRUNCATE.\\n' +\n  '- Exactly one statement.\\n' +\n  '- Add LIMIT 100 if the result could be large and there is no LIMIT already.\\n' +\n  '- Return ONLY the raw SQL - no markdown fences, no explanation.\\n\\n' +\n  `Question: ${question}`;\n\nreturn [{ json: { question, schema, prompt } }];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000004",
+      "name": "Build SQL Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-780, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0 } }) }}",
+        "options": { "timeout": 20000 }
+      },
+      "id": "f1000000-0000-4000-8000-000000000005",
+      "name": "Generate SQL (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-560, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $json;\nlet sql = res.candidates?.[0]?.content?.parts?.[0]?.text || '';\nsql = sql.replace(/```sql/gi, '').replace(/```/g, '').trim();\nsql = sql.replace(/;\\s*$/, '');\n\nconst question = $('Build SQL Prompt').first().json.question;\n\nreturn [{ json: { question, sql } }];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000006",
+      "name": "Extract Generated SQL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-340, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Safety gate before anything the LLM wrote touches a real database:\n// only a single SELECT/CTE statement, no destructive keywords, no\n// statement-chaining via semicolons.\nconst sql = $json.sql;\nconst normalized = sql.trim().toLowerCase();\n\nconst isReadOnly = normalized.startsWith('select') || normalized.startsWith('with');\nconst hasForbidden = /\\b(insert|update|delete|drop|alter|truncate|grant|revoke|create)\\b/i.test(sql);\nconst singleStatement = (sql.match(/;/g) || []).length === 0;\n\nconst safe = isReadOnly && !hasForbidden && singleStatement;\n\nreturn [{ json: { ...$json, safe } }];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000007",
+      "name": "Guard: Read-Only Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-120, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "f3000000-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.safe }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f1000000-0000-4000-8000-000000000008",
+      "name": "Safe To Run?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [100, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "f1000000-0000-4000-8000-000000000009",
+      "name": "Execute Generated Query",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [320, -140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map((i) => i.json);\nconst question = $('Guard: Read-Only Only').first().json.question;\nconst sql = $('Guard: Read-Only Only').first().json.sql;\n\nconst prompt = `Question: ${question}\\nSQL used: ${sql}\\nResult rows (JSON): ${JSON.stringify(rows).slice(0, 4000)}\\n\\n` +\n  'Answer the question in 2-3 plain-English sentences using only these rows. Cite concrete numbers.';\n\nreturn [{ json: { question, sql, rows, prompt } }];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000010",
+      "name": "Build Summary Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, -140]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.prompt }] }], generationConfig: { temperature: 0.2 } }) }}",
+        "options": { "timeout": 20000 }
+      },
+      "id": "f1000000-0000-4000-8000-000000000011",
+      "name": "Summarize Results (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, -140]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $json;\nconst answer = res.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';\nconst prev = $('Build Summary Prompt').first().json;\n\nreturn [{\n  json: {\n    ok: true,\n    question: prev.question,\n    sql: prev.sql,\n    rowCount: prev.rows.length,\n    rows: prev.rows,\n    answer,\n  }\n}];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000012",
+      "name": "Compose Final Answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, -140]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ok: false,\n    question: $json.question,\n    blockedSql: $json.sql,\n    reason: 'The generated SQL failed the read-only safety check and was not executed.',\n  }\n}];"
+      },
+      "id": "f1000000-0000-4000-8000-000000000013",
+      "name": "Blocked Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 160]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "f1000000-0000-4000-8000-000000000014",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 0]
+    }
+  ],
+  "connections": {
+    "Ask Webhook": {
+      "main": [[{ "node": "Read Question", "type": "main", "index": 0 }]]
+    },
+    "Read Question": {
+      "main": [[{ "node": "Introspect Schema", "type": "main", "index": 0 }]]
+    },
+    "Introspect Schema": {
+      "main": [[{ "node": "Build SQL Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build SQL Prompt": {
+      "main": [[{ "node": "Generate SQL (Gemini)", "type": "main", "index": 0 }]]
+    },
+    "Generate SQL (Gemini)": {
+      "main": [[{ "node": "Extract Generated SQL", "type": "main", "index": 0 }]]
+    },
+    "Extract Generated SQL": {
+      "main": [[{ "node": "Guard: Read-Only Only", "type": "main", "index": 0 }]]
+    },
+    "Guard: Read-Only Only": {
+      "main": [[{ "node": "Safe To Run?", "type": "main", "index": 0 }]]
+    },
+    "Safe To Run?": {
+      "main": [
+        [{ "node": "Execute Generated Query", "type": "main", "index": 0 }],
+        [{ "node": "Blocked Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute Generated Query": {
+      "main": [[{ "node": "Build Summary Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Summary Prompt": {
+      "main": [[{ "node": "Summarize Results (Gemini)", "type": "main", "index": 0 }]]
+    },
+    "Summarize Results (Gemini)": {
+      "main": [[{ "node": "Compose Final Answer", "type": "main", "index": 0 }]]
+    },
+    "Compose Final Answer": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    },
+    "Blocked Response": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

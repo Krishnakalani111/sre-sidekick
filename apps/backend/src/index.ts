@@ -11,11 +11,15 @@ import { logger } from "./logger";
 import { buildApp } from "./server";
 import { getMcpClient } from "./clients/mcp";
 import { getLLMClient } from "./clients/llm";
+import { initDb } from "./db/pool";
 
 async function main(): Promise<void> {
   const app = buildApp();
   const llm = getLLMClient();
   const mcpClient = getMcpClient();
+
+  // Connect Postgres (investigation history for the dashboard); non-fatal if down.
+  await initDb();
 
   // Connect the MCP client up front; the pipeline also connects lazily.
   try {

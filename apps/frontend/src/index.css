@@ -1,0 +1,212 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/400-italic.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-daylight-orange: var(--daylight-orange);
+  --color-daylight-beige: var(--daylight-beige);
+  --color-daylight-yellow: var(--daylight-yellow);
+  --color-daylight-blue: var(--daylight-blue);
+  --color-daylight-purple: var(--daylight-purple);
+  --color-daylight-grey: var(--daylight-grey);
+
+  --font-display: "Fraunces", serif;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-heading: var(--font-display);
+
+  --ease-expo-out: cubic-bezier(0.16, 1.08, 0.38, 0.98);
+  --ease-quart-out: cubic-bezier(0.26, 1.04, 0.54, 1);
+  --ease-expo-inout: cubic-bezier(0.9, 0, 0.1, 1);
+  --ease-quart-inout: cubic-bezier(0.77, 0, 0.175, 1);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --radius: 0.375rem;
+
+  --daylight-orange: #f66f00;
+  --daylight-beige: #fff7e9;
+  --daylight-yellow: #fccc3c;
+  --daylight-blue: #1d3e86;
+  --daylight-purple: #321f61;
+  --daylight-grey: #a09b93;
+
+  --background: #fff7e9;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #f66f00;
+  --primary-foreground: #fff7e9;
+  --secondary: #f4ede0;
+  --secondary-foreground: #111111;
+  --muted: #f4ede0;
+  --muted-foreground: #6b6358;
+  --accent: #fccc3c;
+  --accent-foreground: #111111;
+  --destructive: #d6382c;
+  --border: #e7ddca;
+  --input: #e7ddca;
+  --ring: #f66f00;
+  --chart-1: #f66f00;
+  --chart-2: #fccc3c;
+  --chart-3: #1d3e86;
+  --chart-4: #321f61;
+  --chart-5: #a09b93;
+  --sidebar: #fff7e9;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #f66f00;
+  --sidebar-primary-foreground: #fff7e9;
+  --sidebar-accent: #f4ede0;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #e7ddca;
+  --sidebar-ring: #f66f00;
+}
+
+.dark {
+  --background: #111111;
+  --foreground: #f4ede0;
+  --card: #191919;
+  --card-foreground: #f4ede0;
+  --popover: #191919;
+  --popover-foreground: #f4ede0;
+  --primary: #f66f00;
+  --primary-foreground: #111111;
+  --secondary: #201f1c;
+  --secondary-foreground: #f4ede0;
+  --muted: #1c1b19;
+  --muted-foreground: #a09b93;
+  --accent: #fccc3c;
+  --accent-foreground: #111111;
+  --destructive: #ff6b57;
+  --border: #2a2825;
+  --input: #2a2825;
+  --ring: #f66f00;
+  --chart-1: #f66f00;
+  --chart-2: #fccc3c;
+  --chart-3: #4d6fc4;
+  --chart-4: #7a5cc4;
+  --chart-5: #a09b93;
+  --sidebar: #191919;
+  --sidebar-foreground: #f4ede0;
+  --sidebar-primary: #f66f00;
+  --sidebar-primary-foreground: #111111;
+  --sidebar-accent: #201f1c;
+  --sidebar-accent-foreground: #f4ede0;
+  --sidebar-border: #2a2825;
+  --sidebar-ring: #f66f00;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply font-sans bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .font-mono-label {
+    font-family: var(--font-mono);
+    @apply uppercase tracking-[0.12em] text-xs;
+  }
+
+  .glass-card {
+    background: color-mix(in srgb, var(--card) 55%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  }
+
+  .gradient-panel-warm {
+    background: linear-gradient(115deg, #f66f00 0%, #ff9a3c 35%, #fccc3c 100%);
+  }
+
+  .gradient-panel-cool {
+    background: linear-gradient(115deg, #1d3e86 0%, #321f61 100%);
+  }
+
+  .gradient-noise {
+    isolation: isolate;
+  }
+
+  .gradient-noise::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+    animation: grain-shift 1s steps(10) infinite;
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .intro-line {
+    margin-block: -0.04em;
+    padding-block: 0.04em;
+  }
+}
+
+@keyframes grain-shift {
+  0% {
+    background-position: 0 0;
+  }
+  110% {
+    background-position: 400px 400px;
+  }
+}

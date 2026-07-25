@@ -7,6 +7,7 @@ import type { Request, Response } from "express";
 import { normalizeAlert } from "../modules/alerts/normalize";
 import { runInvestigation } from "../modules/investigations/orchestrator";
 import { investigationStore } from "../modules/investigations/store";
+import { saveInvestigation } from "../db/investigationsRepo";
 import { logger } from "../logger";
 
 export const webhookRouter = Router();
@@ -18,6 +19,7 @@ webhookRouter.post("/webhook/alert", async (req: Request, res: Response) => {
 
     const result = await runInvestigation(alert);
     investigationStore.save(alert.id, result);
+    await saveInvestigation(result, { issue: alert.name });
 
     res.status(200).json({
       investigationId: alert.id,
