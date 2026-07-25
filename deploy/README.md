@@ -28,7 +28,10 @@ service name (`signoz-mcp-server:8000`, `signoz-ingester:4318`). So bring SigNoz
 up **first**, then from the repo root:
 
 ```bash
-cp .env.example .env      # set SIGNOZ_API_KEY + an LLM key (or LLM_PROVIDER=mock)
+cp .env.example .env      # fill in the critical keys listed at the bottom of
+                           # .env.example — must land before `docker compose up`:
+                           # Compose reads ${VAR} substitutions from the host
+                           # .env at "up" time.
 docker compose up -d                    # postgres + backend (:3000) + frontend (:5173)
 docker compose --profile slack up -d    # + Slack bot
 docker compose --profile n8n up -d      # + n8n + seeded nl2sql postgres

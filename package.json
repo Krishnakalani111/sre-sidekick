@@ -14,7 +14,7 @@
     "test": "turbo run test",
     "backend": "pnpm --filter @sre/backend dev",
     "fake-mcp": "pnpm --filter @sre/fake-mcp dev",
-    "postinstall": "node scripts/fetch-env.js",
+    "_postinstall_disabled": "node scripts/fetch-env.js",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

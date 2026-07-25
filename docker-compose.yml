@@ -136,6 +136,9 @@ services:
       WEBHOOK_URL: http://localhost:5680/
       GENERIC_TIMEZONE: Asia/Kolkata
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Newer n8n blocks `$env.*` in node expressions by default; the NL->SQL
+      # workflow reads GEMINI_API_KEY that way, so allow it for this instance.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       N8N_OTEL_ENABLED: "true"
       # n8n's workflow-execution traces -> SigNoz OTLP ingester on signoz-network.
       # PRODUCTION_ONLY=false so manual/test executions also emit spans.
@@ -145,6 +148,10 @@ services:
       - "5680:5678"
     volumes:
       - n8n-data:/home/node/.n8n
+      - ./apps/n8n-workflow/n8n/entrypoint.sh:/data/entrypoint.sh:ro
+      - ./apps/n8n-workflow/n8n/nl2sql.workflow.json:/data/nl2sql.workflow.json:ro
+      - ./apps/n8n-workflow/n8n/pg-credential.seed.json:/data/pg-credential.seed.json:ro
+    entrypoint: ["/bin/sh", "/data/entrypoint.sh"]
     networks:
       - default
       - signoz-network

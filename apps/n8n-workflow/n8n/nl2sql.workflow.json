@@ -1,4 +1,5 @@
 {
+  "id": "nl2sqlWorkflow01",
   "name": "NL -> SQL (Postgres + Gemini)",
   "nodes": [
     {
@@ -35,7 +36,10 @@
       "name": "Introspect Schema",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-1000, 0]
+      "position": [-1000, 0],
+      "credentials": {
+        "postgres": { "id": "nl2sqlPostgresCred01", "name": "nl2sql Postgres" }
+      }
     },
     {
       "parameters": {
@@ -114,7 +118,10 @@
       "name": "Execute Generated Query",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [320, -140]
+      "position": [320, -140],
+      "credentials": {
+        "postgres": { "id": "nl2sqlPostgresCred01", "name": "nl2sql Postgres" }
+      }
     },
     {
       "parameters": {
