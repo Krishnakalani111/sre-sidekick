@@ -5,6 +5,12 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY . .
+# Backend URL for the browser to call. Vite inlines VITE_* at build time, so
+# this must be a build arg — setting it on the container at runtime does
+# nothing. It is a HOST-visible URL (the browser resolves it, not the
+# container), hence localhost:3000 rather than the compose service name.
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 FROM nginx:alpine

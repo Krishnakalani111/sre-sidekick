@@ -55,12 +55,17 @@ export function IncidentDetail({
             <p className="text-sm font-medium text-white">{incident.suggestedFix}</p>
           </section>
 
-          <Separator />
-
-          <section>
-            <h3 className="font-mono-label mb-3 text-muted-foreground">Timeline</h3>
-            <Timeline timeline={incident.timeline} />
-          </section>
+          {/* The history API doesn't persist a timeline, so this is empty for
+              stored rows — render nothing rather than a bare heading. */}
+          {incident.timeline.length > 0 && (
+            <>
+              <Separator />
+              <section>
+                <h3 className="font-mono-label mb-3 text-muted-foreground">Timeline</h3>
+                <Timeline timeline={incident.timeline} />
+              </section>
+            </>
+          )}
 
           <Separator />
 

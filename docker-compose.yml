@@ -73,6 +73,11 @@ services:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
+      args:
+        # Baked into the JS bundle at build time (Vite). The browser calls this,
+        # so it must be reachable from the HOST — not http://backend:3000.
+        # Change it and rebuild: docker compose up -d --build frontend
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     container_name: sidekick-frontend
     depends_on:
       - backend

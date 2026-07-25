@@ -12,6 +12,8 @@ export interface TimelineEvent {
 
 // Mirrors the response shape of ai-sre-slack-bot/src/mockBackend.js so both
 // interfaces can point at the same real /investigate endpoint later.
+export type Accuracy = "accurate" | "inaccurate" | "unverified";
+
 export interface Incident {
   id: string;
   query: string;
@@ -25,4 +27,10 @@ export interface Incident {
   timeline: TimelineEvent[];
   verificationStatus: "pending_approval" | "approved" | "dismissed" | "verified";
   createdAt: string;
+  /** Diagnosis headline — what the list rows show. */
+  title: string;
+  severity: string;
+  /** Reviewer verdict on the RCA; drives the accuracy stat. */
+  accuracy: Accuracy;
+  affectedServices: string[];
 }

@@ -31,6 +31,11 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  /* Incident status / action-risk colours (badges, timeline markers). */
+  --color-status-critical: var(--status-critical);
+  --color-status-warning: var(--status-warning);
+  --color-status-success: var(--status-success);
+
   --color-daylight-orange: var(--daylight-orange);
   --color-daylight-beige: var(--daylight-beige);
   --color-daylight-yellow: var(--daylight-yellow);
@@ -73,6 +78,11 @@
 :root {
   --radius: 0.375rem;
 
+  /* Darkened against the light background so badge text stays legible. */
+  --status-critical: #c62a20;
+  --status-warning: #a67400;
+  --status-success: #1a7f3c;
+
   --daylight-orange: #f66f00;
   --daylight-beige: #fff7e9;
   --daylight-yellow: #fccc3c;
@@ -114,6 +124,11 @@
 }
 
 .dark {
+  /* The mockup's status palette — bright enough for a dark surface. */
+  --status-critical: #ff3b30;
+  --status-warning: #ffcc00;
+  --status-success: #34c759;
+
   --background: #111111;
   --foreground: #f4ede0;
   --card: #191919;

@@ -11,6 +11,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Diagnosis, Evidence } from "@sre/types";
+import { diagnosisToMarkdown } from "../modules/investigations/markdown";
 import { normalizeAlert } from "../modules/alerts/normalize";
 import { runInvestigation } from "../modules/investigations/orchestrator";
 import { investigationStore } from "../modules/investigations/store";
@@ -74,9 +75,26 @@ investigateRouter.post("/investigate", async (req: Request, res: Response) => {
     investigationStore.save(alert.id, result);
     await saveInvestigation(result, { issue: query });
 
+    const rca = toRcaResponse(query, result.diagnosis, result.evidence);
+
+    // `format: "markdown"` ADDS a rendered document; it never removes fields.
+    // Omitting it (as the Slack bot does) returns exactly the previous shape,
+    // so existing clients are unaffected by construction.
+    const markdown =
+      req.body?.format === "markdown"
+        ? {
+            markdown: diagnosisToMarkdown(result.diagnosis, {
+              evidenceLines: rca.evidence,
+              suggestedFix: rca.suggestedFix,
+              timeline: rca.timeline,
+            }),
+          }
+        : {};
+
     res.status(200).json({
       investigationId: alert.id,
-      ...toRcaResponse(query, result.diagnosis, result.evidence),
+      ...rca,
+      ...markdown,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
