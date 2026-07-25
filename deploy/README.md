@@ -40,9 +40,18 @@ executions to SigNoz (`N8N_OTEL_ENABLED=true`, endpoint `signoz-ingester:4318`,
 `n8n` appears as a service in SigNoz with `workflow.execute` / `node.execute` spans.
 
 ## SigNoz features exercised (for judging)
+These are created THROUGH the SigNoz MCP server and stored in SigNoz's own DB, so
+a fresh `foundryctl cast` starts without them. **Reproduce them with one command**
+(after SigNoz is up + `SIGNOZ_API_KEY` set in `.env`):
+
+```bash
+./scripts/setup-signoz-features.sh   # Dashboard + saved Query Builder view + Alert
+```
+
 - **MCP server** — powers the whole RCA engine (41 tools discovered at runtime).
-- **Alerts** — `scripts/create-alert.ts` (traces-based threshold on checkout 5xx).
-- **Dashboards** — `scripts/create-dashboard.ts` ("Checkout / Payments Health").
-- **Query Builder** — `scripts/create-view.ts` (saved traces view) + the alert/dashboard builder queries.
+- **Dashboards** — "Checkout / Payments Health" (`scripts/create-dashboard.ts`).
+- **Query Builder** — saved traces view (`scripts/create-view.ts`) + the alert/dashboard builder queries.
+- **Alerts** — traces-based threshold on checkout 5xx (`scripts/create-alert.ts`; routes to a
+  notification channel — create one named `test1` in the SigNoz UI first, or edit the script).
 
 See `INTEGRATION.md` (client contracts) and `apps/backend/DASHBOARD_API.md` (dashboard table API).
