@@ -76,6 +76,11 @@
 }
 
 :root {
+  /* Tells the browser which palette to draw NATIVE controls with — select
+     popups, scrollbars, form widgets. Without it, a dark page still gets the
+     light system menu (blue highlight, unreadable options). */
+  color-scheme: light;
+
   --radius: 0.375rem;
 
   /* Darkened against the light background so badge text stays legible. */
@@ -124,6 +129,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   /* The mockup's status palette — bright enough for a dark surface. */
   --status-critical: #ff3b30;
   --status-warning: #ffcc00;

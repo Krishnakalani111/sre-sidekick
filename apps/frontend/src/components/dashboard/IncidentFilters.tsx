@@ -53,15 +53,20 @@ function Chip({
     <label className={cn(chip, active && "border-primary/60 text-primary")}>
       <Icon className="size-3.5" />
       <span>{label}:</span>
-      {/* Native select — keyboard and screen-reader behaviour for free. */}
+      {/* Native select — keyboard and screen-reader behaviour for free. The
+          popup is drawn by the browser, so its palette comes from the
+          `color-scheme` declared in index.css; these classes only style the
+          options themselves (honoured on Linux/Windows, ignored on macOS). */}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer bg-transparent font-mono-label outline-none"
+        className="cursor-pointer bg-transparent font-mono-label text-current outline-none"
       >
-        <option value="all">All</option>
+        <option value="all" className="bg-popover text-popover-foreground">
+          All
+        </option>
         {options.map((option) => (
-          <option key={option} value={option}>
+          <option key={option} value={option} className="bg-popover text-popover-foreground">
             {option}
           </option>
         ))}

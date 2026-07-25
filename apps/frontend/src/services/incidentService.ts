@@ -31,6 +31,7 @@ function toVerificationStatus(accuracy: Accuracy): Incident["verificationStatus"
 function toIncident(
   row: InvestigationRow,
   timeline: TimelineEvent[] = [],
+  steps?: Incident["steps"],
 ): Incident {
   return {
     id: row.id,
@@ -50,6 +51,7 @@ function toIncident(
     severity: row.severity || "unknown",
     accuracy: row.accuracy,
     affectedServices: row.affectedServices ?? [],
+    steps,
   };
 }
 
@@ -60,7 +62,7 @@ export async function getIncidents(): Promise<Incident[]> {
 
 export async function getIncident(id: string): Promise<Incident | undefined> {
   const row = await getInvestigation(id);
-  return toIncident(row, row.timeline ?? []);
+  return toIncident(row, row.timeline ?? [], row.steps);
 }
 
 /** Record whether the RCA was right. Returns the updated incident. */

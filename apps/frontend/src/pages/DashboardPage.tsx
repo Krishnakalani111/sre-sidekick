@@ -12,37 +12,45 @@ import {
   type Filters,
 } from "@/components/dashboard/IncidentFilters";
 import { AppShell } from "@/components/layout/AppShell";
-import { useIncidents } from "@/hooks/useIncidents";
+import { useIncident, useIncidents } from "@/hooks/useIncidents";
 import { setIncidentAccuracy } from "@/services/incidentService";
-import type { Incident, IncidentStatus } from "@/types/incident";
+import type { Incident } from "@/types/incident";
 
 export function DashboardPage() {
-  const { incidents: fetchedIncidents, loading, error } = useIncidents();
-  const [overrides, setOverrides] = useState<Record<string, IncidentStatus>>({});
+  const { incidents, loading, error, patchIncident } = useIncidents();
   const [selected, setSelected] = useState<Incident | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
-  const incidents = fetchedIncidents.map((incident) =>
-    overrides[incident.id] ? { ...incident, incidentStatus: overrides[incident.id] } : incident
-  );
-
   const visible = useMemo(() => applyFilters(incidents, filters), [incidents, filters]);
 
-  const selectedWithOverride = selected
-    ? incidents.find((i) => i.id === selected.id) ?? selected
+  // The list response has no step trail; GET /investigations/:id does. Fetch it
+  // when a row opens so the sheet can show the planner's reasoning.
+  const { incident: detail, loading: detailLoading } = useIncident(selected?.id);
+
+  const row = selected ? incidents.find((i) => i.id === selected.id) ?? selected : null;
+  const selectedWithDetail = row
+    ? { ...row, steps: detail?.id === row.id ? detail.steps : undefined }
     : null;
 
   function handleDecide(id: string, decision: "approved" | "dismissed") {
-    // Optimistic — the row flips immediately, then persists as RCA feedback.
-    setOverrides((prev) => ({ ...prev, [id]: decision }));
-    void setIncidentAccuracy(id, decision === "approved").catch(() => {
-      // Roll back so the UI doesn't claim a decision the backend never stored.
-      setOverrides((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
+    const accurate = decision === "approved";
+    const before = incidents.find((i) => i.id === id);
+
+    // Optimistic. Patch `accuracy` too, not just incidentStatus — the list row
+    // badge and the summary tiles are both driven by accuracy, so updating the
+    // status alone leaves them stale even though the write succeeded.
+    patchIncident(id, {
+      incidentStatus: decision,
+      accuracy: accurate ? "accurate" : "inaccurate",
+      verificationStatus: accurate ? "approved" : "dismissed",
     });
+
+    void setIncidentAccuracy(id, accurate)
+      .then((updated) => patchIncident(id, updated)) // fold in the server's record
+      .catch(() => {
+        // Roll back so the UI never claims a decision the backend didn't store.
+        if (before) patchIncident(id, before);
+      });
   }
 
   if (error) {
@@ -85,8 +93,12 @@ export function DashboardPage() {
       </Link>
 
       <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        {selectedWithOverride && (
-          <IncidentDetail incident={selectedWithOverride} onDecide={handleDecide} />
+        {selectedWithDetail && (
+          <IncidentDetail
+            incident={selectedWithDetail}
+            onDecide={handleDecide}
+            stepsLoading={detailLoading}
+          />
         )}
       </Sheet>
     </AppShell>

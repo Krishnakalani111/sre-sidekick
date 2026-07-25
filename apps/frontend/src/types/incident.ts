@@ -12,6 +12,8 @@ export interface TimelineEvent {
 
 // Mirrors the response shape of ai-sre-slack-bot/src/mockBackend.js so both
 // interfaces can point at the same real /investigate endpoint later.
+import type { InvestigationStep } from "@/lib/api";
+
 export type Accuracy = "accurate" | "inaccurate" | "unverified";
 
 export interface Incident {
@@ -33,4 +35,6 @@ export interface Incident {
   /** Reviewer verdict on the RCA; drives the accuracy stat. */
   accuracy: Accuracy;
   affectedServices: string[];
+  /** Planner trail — only the detail endpoint returns it, so it's optional. */
+  steps?: InvestigationStep[];
 }

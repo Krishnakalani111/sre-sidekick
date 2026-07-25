@@ -40,7 +40,19 @@ export function useIncidents() {
     };
   }, []);
 
-  return { incidents, loading, error, reload: load };
+  /**
+   * Merge fields into one loaded record. Used for optimistic feedback updates
+   * and for folding in the server's response afterwards — the list rows and
+   * the stat tiles both read `accuracy`, so it has to change here, not in a
+   * separate override map alongside it.
+   */
+  const patchIncident = useCallback((id: string, patch: Partial<Incident>) => {
+    setIncidents((prev) =>
+      prev.map((incident) => (incident.id === id ? { ...incident, ...patch } : incident)),
+    );
+  }, []);
+
+  return { incidents, loading, error, reload: load, patchIncident };
 }
 
 export function useIncident(id: string | undefined) {

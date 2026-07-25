@@ -119,6 +119,16 @@ export interface InvestigationRow {
   feedbackAt: string | null;
 }
 
+/** One planner iteration: what it decided to do next, and why. */
+export interface InvestigationStep {
+  step: number;
+  reasoning: string;
+  done: boolean;
+  toolCalls: Array<{ tool: string; reason?: string }>;
+  okCount?: number;
+  resultCount?: number;
+}
+
 export interface InvestigationsPage {
   total: number;
   limit: number;
@@ -148,10 +158,11 @@ export async function listInvestigations(
  */
 export async function getInvestigation(
   id: string,
-): Promise<InvestigationRow & Partial<Diagnosis>> {
+): Promise<InvestigationRow & Partial<Diagnosis> & { steps?: InvestigationStep[] }> {
   const res = await fetch(apiUrl(`/investigations/${id}`));
   if (!res.ok) throw new Error(await errorMessage(res));
-  return (await res.json()) as InvestigationRow & Partial<Diagnosis>;
+  return (await res.json()) as InvestigationRow &
+    Partial<Diagnosis> & { steps?: InvestigationStep[] };
 }
 
 /** PATCH /investigations/:id/feedback — the 👍/👎 on a row. */
