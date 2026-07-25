@@ -1,0 +1,104 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="AI SRE Sidekick — Architecture" id="sidekick-arch">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="AI SRE Sidekick — Architecture &amp; Flows" style="text;html=1;fontSize=20;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="640" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Group A: Instrumented services ===== -->
+        <mxCell id="grpA" value="Instrumented services (OpenTelemetry)" style="rounded=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="250" height="470" as="geometry" />
+        </mxCell>
+        <mxCell id="n_checkout" value="checkout&#10;(:5001)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="170" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="n_payments" value="payments&#10;(:5002)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="232" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="n_n8n" value="n8n workflows&#10;(:5680)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="320" width="210" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="n_other" value="other services&#10;(order-agent, red-team, …)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="400" width="210" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Group B: SigNoz via Foundry ===== -->
+        <mxCell id="grpB" value="SigNoz — deployed via Foundry (casting.yaml + .lock)&#10;docker network: signoz-network" style="rounded=1;fillColor=none;strokeColor=#9673a6;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="360" y="100" width="360" height="640" as="geometry" />
+        </mxCell>
+        <mxCell id="n_ing" value="OTel Collector / Ingester&#10;:4317 · :4318 (OTLP)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="380" y="160" width="320" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="n_ch" value="ClickHouse — telemetry store&#10;(traces · logs · metrics)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="380" y="240" width="320" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="n_meta" value="Metastore (Postgres)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="380" y="320" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="n_signoz" value="SigNoz UI / API :8080 + Alertmanager&#10;Alerts · Dashboards · Query Builder views" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="380" y="388" width="320" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="n_mcp" value="SigNoz MCP server&#10;:8000/mcp — 41 tools (search/aggregate traces, logs, metrics, dashboards, alerts…)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="486" width="320" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Group C: Sidekick app ===== -->
+        <mxCell id="grpC" value="Sidekick app (docker compose — joins signoz-network)" style="rounded=1;fillColor=none;strokeColor=#82b366;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="790" y="100" width="500" height="640" as="geometry" />
+        </mxCell>
+        <mxCell id="n_backend" value="&lt;b&gt;Backend (Express) :3000&lt;/b&gt;&lt;br&gt;&lt;hr&gt;&lt;b&gt;Routes:&lt;/b&gt; /webhook/alert · /investigate · /investigations · /notify/slack · /stt · /health&lt;br&gt;&lt;br&gt;&lt;b&gt;Investigation Orchestrator&lt;/b&gt; (agentic loop):&lt;br&gt;Planner (LLM) → MCP Executor → Evidence Collector → RCA (LLM) → Diagnosis&lt;br&gt;&lt;br&gt;&lt;b&gt;Clients:&lt;/b&gt; @sre/mcp-client · @sre/llm · @sre/slack · @sre/stt" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="810" y="150" width="460" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="n_hist" value="Postgres&#10;investigation history&#10;(issue → RCA → accuracy)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="810" y="475" width="215" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="n_front" value="Frontend dashboard&#10;:5173 (nginx)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="475" width="215" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="n_bot" value="Slack bot (Socket Mode) — @mention / DM → /investigate" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="810" y="565" width="460" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Group D: External ===== -->
+        <mxCell id="grpD" value="External services" style="rounded=1;fillColor=none;strokeColor=#d79b00;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="120" width="250" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="n_llm" value="LLM API&#10;Gemini / Grok" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="170" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="n_slack" value="Slack workspace" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="320" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="n_deep" value="Deepgram (STT)" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="470" width="210" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Legend ===== -->
+        <mxCell id="legend" value="&lt;b&gt;Flows&lt;/b&gt;&lt;br&gt;① Telemetry: services → SigNoz over OTLP (:4318)&lt;br&gt;② Incident → SigNoz alert fires → POST /webhook/alert (via notification channel)&lt;br&gt;③ Investigate: backend drives SigNoz MCP tools → gathers Evidence&lt;br&gt;④ RCA: backend → LLM (Gemini/Grok) for planning + diagnosis&lt;br&gt;⑤ Auto-post RCA → Slack channel (with Approve / Dismiss buttons)&lt;br&gt;⑥ ChatOps: @mention Slack bot → /investigate → reply in thread&lt;br&gt;⑦ Dashboard: frontend → GET /investigations (Postgres history + accuracy feedback)&lt;br&gt;⑧ Voice: audio → /stt (Deepgram) → /investigate&lt;br&gt;&lt;br&gt;&lt;b&gt;Deploy:&lt;/b&gt; foundryctl cast (casting.yaml + .lock) → SigNoz + MCP · docker compose up → app · both share signoz-network" style="rounded=1;html=1;whiteSpace=wrap;fillColor=#f8f8f8;strokeColor=#666666;align=left;verticalAlign=top;spacing=10;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="700" height="260" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Edges ===== -->
+        <mxCell id="e1" value="① OTLP" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_checkout" target="n_ing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1b" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_payments" target="n_ing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1c" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_n8n" target="n_ing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e1d" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_other" target="n_ing"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="store" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_ing" target="n_ch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="② alert fires → POST /webhook/alert" style="endArrow=block;html=1;rounded=1;strokeWidth=2;strokeColor=#b85450;fontStyle=1;fontColor=#b85450;" edge="1" parent="1" source="n_signoz" target="n_backend"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="③ MCP tool calls" style="endArrow=block;html=1;rounded=1;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="n_backend" target="n_mcp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="query" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_mcp" target="n_ch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="④ planner + RCA" style="endArrow=block;html=1;rounded=1;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="n_backend" target="n_llm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="⑤ auto-post RCA" style="endArrow=block;html=1;rounded=1;strokeWidth=2;strokeColor=#82b366;fontStyle=1;fontColor=#2d7a2d;" edge="1" parent="1" source="n_backend" target="n_slack"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="post / reply" style="endArrow=block;startArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_bot" target="n_slack"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" value="⑥ ask → /investigate" style="endArrow=block;html=1;rounded=1;fontStyle=1;" edge="1" parent="1" source="n_bot" target="n_backend"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" value="⑦ GET /investigations" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_front" target="n_backend"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" value="persist" style="endArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_backend" target="n_hist"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" value="⑧ /stt transcribe" style="endArrow=block;startArrow=block;html=1;rounded=1;" edge="1" parent="1" source="n_backend" target="n_deep"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
