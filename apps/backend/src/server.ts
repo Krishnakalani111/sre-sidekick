@@ -3,15 +3,20 @@
  * `index.ts` so it can be constructed for tests without binding a port.
  */
 import express from "express";
+import cors from "cors";
 import type { Express, NextFunction, Request, Response } from "express";
 import { healthRouter } from "./routes/health";
 import { webhookRouter } from "./routes/webhook";
+import { investigateRouter } from "./routes/investigate";
 import { investigationsRouter } from "./routes/investigations";
+import { sttRouter } from "./routes/stt";
+import { notifyRouter } from "./routes/notify";
 import { logger } from "./logger";
 
 export function buildApp(): Express {
   const app = express();
 
+  app.use(cors()); // allow the dashboard (other origin) to call the API
   app.use(express.json({ limit: "2mb" }));
 
   // Lightweight request logging.
@@ -22,7 +27,10 @@ export function buildApp(): Express {
 
   app.use(healthRouter);
   app.use(webhookRouter);
+  app.use(investigateRouter);
   app.use(investigationsRouter);
+  app.use(sttRouter);
+  app.use(notifyRouter);
 
   // 404 fallback.
   app.use((_req: Request, res: Response) => {

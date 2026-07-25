@@ -45,16 +45,25 @@ function renderAlert(alert: Alert): string {
   return lines.join("\n");
 }
 
-function schemaKeys(schema?: Record<string, unknown>): string {
-  if (!schema) return "(no input schema advertised)";
+function renderSchema(schema?: Record<string, unknown>): string {
+  if (!schema) return "       (no input schema advertised)";
   // JSON Schema objects put field names under `properties`.
-  const props = (schema.properties as Record<string, unknown> | undefined) ?? undefined;
-  const keys = props ? Object.keys(props) : Object.keys(schema);
-  if (keys.length === 0) return "(no inputs)";
+  const props = schema.properties as Record<string, Record<string, unknown>> | undefined;
+  if (!props || Object.keys(props).length === 0) return "       (no inputs)";
   const required = Array.isArray(schema.required) ? (schema.required as string[]) : [];
-  return keys
-    .map((k) => (required.includes(k) ? `${k} (required)` : k))
-    .join(", ");
+  const lines: string[] = [];
+  for (const [name, raw] of Object.entries(props)) {
+    const s = (raw ?? {}) as Record<string, unknown>;
+    const type = typeof s.type === "string" ? (s.type as string) : Array.isArray(s.enum) ? "enum" : "any";
+    const req = required.includes(name) ? " REQUIRED" : "";
+    const en = Array.isArray(s.enum) ? ` enum:[${(s.enum as unknown[]).join(", ")}]` : "";
+    const def = s.default !== undefined ? ` default:${JSON.stringify(s.default)}` : "";
+    const desc = typeof s.description === "string"
+      ? ` — ${s.description.replace(/\s+/g, " ").trim().slice(0, 160)}`
+      : "";
+    lines.push(`       - ${name} (${type})${req}${en}${def}${desc}`);
+  }
+  return lines.join("\n");
 }
 
 function renderToolCatalog(tools: DiscoveredTool[]): string {
@@ -63,10 +72,10 @@ function renderToolCatalog(tools: DiscoveredTool[]): string {
   }
   return tools
     .map((t, i) => {
-      const desc = t.description ? t.description.trim() : "(no description)";
-      return `${i + 1}. ${t.name}\n   description: ${desc}\n   inputs: ${schemaKeys(t.inputSchema)}`;
+      const desc = t.description ? t.description.replace(/\s+/g, " ").trim() : "(no description)";
+      return `${i + 1}. ${t.name} — ${desc}\n     inputs:\n${renderSchema(t.inputSchema)}`;
     })
-    .join("\n");
+    .join("\n\n");
 }
 
 function renderDigest(evidenceDigest: string): string {
@@ -100,6 +109,16 @@ export function plannerPrompt(a: {
     "  match the tool's advertised input schema.",
     "- Stop as soon as you have enough evidence to explain the root cause. You MUST respect the",
     "  step budget: if this is the last step, set done:true.",
+    "",
+    "TOOL INPUT RULES — follow exactly or the call fails:",
+    "- Include every REQUIRED field, and use enum values VERBATIM (they are case-sensitive,",
+    '  e.g. "time_series" not "TIME_SERIES"; "count" not "COUNT").',
+    "- For time windows, PREFER a relative window via a `timeRange` field (e.g. \"1h\", \"24h\", \"30m\")",
+    "  when the schema offers it. If you must pass explicit `start`/`end`, they MUST be unix epoch",
+    "  MILLISECONDS as integers (e.g. 1711130400000) — NEVER ISO-8601 strings like \"2026-07-23T11:00:00Z\".",
+    "- Match field names to the schema precisely; do not invent parameters.",
+    "- Every SigNoz tool accepts a `searchContext` string — ALWAYS set it to a concise restatement",
+    "  of the alert/incident under investigation (service, symptom, window). It sharpens results.",
     "",
     "OUTPUT CONTRACT — reply with JSON ONLY (no prose, no markdown fences), matching exactly:",
     "{",
