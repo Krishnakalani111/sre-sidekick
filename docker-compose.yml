@@ -1,14 +1,15 @@
-# Full app stack for the AI SRE Sidekick.
+# Full app stack for the AI SRE Sidekick — one compose to rule them all.
 #
-#   docker compose up -d               # postgres + backend
-#   docker compose --profile slack up -d   # + slack-bot
+#   docker compose up -d                         # postgres + backend + frontend (dashboard)
+#   docker compose --profile slack up -d         # + Slack bot
+#   docker compose --profile n8n up -d           # + n8n NL->SQL workflow (+ its seeded postgres)
+#   docker compose --profile slack --profile n8n up -d   # everything
 #
 # Reads secrets from a repo-root .env (gitignored): SIGNOZ_API_KEY, GEMINI_API_KEY
-# or XAI_API_KEY, SLACK_* . With none set, the backend runs in mock mode.
+# or XAI_API_KEY, SLACK_*, DEEPGRAM_API_KEY. With none set, the backend runs in mock mode.
 #
-# NOTE: SigNoz + the SigNoz MCP server are deployed separately via Foundry
-# (see deploy/signoz). The backend reaches the MCP server on the host at
-# host.docker.internal:8000.
+# SigNoz + the SigNoz MCP server are deployed separately via Foundry (deploy/signoz).
+# Containers reach them on the host: MCP at host.docker.internal:8000, OTLP at :4318.
 services:
   postgres:
     image: postgres:16
@@ -40,8 +41,7 @@ services:
       BACKEND_PORT: 3000
       DATABASE_URL: postgres://sidekick:sidekick@postgres:5432/sidekick
       # Inside the container, the host's SigNoz MCP is reached via
-      # host.docker.internal (NOT localhost). Hardcoded so a host-oriented
-      # .env (localhost:8000) can't clobber it. Override with MCP_URL if the
+      # host.docker.internal (NOT localhost). Override with MCP_URL if the
       # MCP server runs elsewhere / on a shared docker network.
       MCP_SERVER_URL: ${MCP_URL:-http://host.docker.internal:8000/mcp}
       LLM_PROVIDER: ${LLM_PROVIDER:-mock}
@@ -52,6 +52,9 @@ services:
       GROK_MODEL: ${GROK_MODEL:-grok-2-latest}
       INVESTIGATION_MAX_STEPS: ${INVESTIGATION_MAX_STEPS:-4}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY:-}
+      DEEPGRAM_MODEL: ${DEEPGRAM_MODEL:-nova-3}
+      DEEPGRAM_LANGUAGE: ${DEEPGRAM_LANGUAGE:-multi}
       # Outbound Slack notifications (POST /notify/slack). Without a token those
       # endpoints return 503; everything else keeps working.
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
@@ -60,6 +63,17 @@ services:
       - "3000:3000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: sidekick-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80" # 8080 is taken by the SigNoz UI
     restart: unless-stopped
 
   slack-bot:
@@ -78,6 +92,56 @@ services:
       USE_MOCK_BACKEND: ${USE_MOCK_BACKEND:-0}
     restart: unless-stopped
 
+  # ---- n8n NL->SQL workflow (opt-in: --profile n8n) --------------------------
+  # A seeded Postgres for the NL->SQL demo (separate from the sidekick DB), plus
+  # n8n. In the n8n Postgres credential, use host `nl2sql-postgres`, port 5432.
+  nl2sql-postgres:
+    image: postgres:16-alpine
+    container_name: sidekick-nl2sql-postgres
+    profiles: ["n8n"]
+    environment:
+      POSTGRES_DB: nl2sql
+      POSTGRES_USER: nl2sql
+      POSTGRES_PASSWORD: nl2sql
+    ports:
+      - "5433:5432" # 5432 is taken by the sidekick postgres
+    volumes:
+      - ./apps/n8n-workflow/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - nl2sql-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nl2sql"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: sidekick-n8n
+    profiles: ["n8n"]
+    depends_on:
+      nl2sql-postgres:
+        condition: service_healthy
+    environment:
+      N8N_SECURE_COOKIE: "false"
+      WEBHOOK_URL: http://localhost:5680/
+      GENERIC_TIMEZONE: Asia/Kolkata
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      N8N_OTEL_ENABLED: "true"
+      # Send n8n's own telemetry to the host's SigNoz OTLP ingester.
+      N8N_OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4318
+    ports:
+      - "5680:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
 volumes:
   sidekick-pgdata:
     name: sidekick-pgdata
+  nl2sql-pgdata:
+    name: sidekick-nl2sql-pgdata
+  n8n-data:
+    name: sidekick-n8n-data

@@ -33,19 +33,22 @@ answer is hardcoded — both come from the live database on every request.
 
 ## Setup
 
+n8n and its seeded Postgres are part of the **root `docker-compose.yml`** under
+the `n8n` profile (set `GEMINI_API_KEY` in the repo-root `.env` first):
+
 ```bash
-cd apps/n8n-workflow
-cp .env.example .env        # set GEMINI_API_KEY (free tier: https://aistudio.google.com/apikey)
-docker compose up -d        # real Postgres, seeded, + n8n on :5680
+# from the repo root
+docker compose --profile n8n up -d   # seeded nl2sql Postgres + n8n on :5680
 ```
 
 Open n8n at `http://localhost:5680` → **Import from File** →
-`n8n/nl2sql.workflow.json`.
+`apps/n8n-workflow/n8n/nl2sql.workflow.json`.
 
 On both Postgres nodes (**Introspect Schema**, **Execute Generated Query**),
-select/create a Postgres credential pointing at the compose network:
+select/create a Postgres credential pointing at the seeded DB on the compose
+network:
 
-- Host: `postgres`
+- Host: `nl2sql-postgres`   ← the compose service name (host `localhost:5433` from your machine)
 - Port: `5432`
 - Database: `nl2sql`
 - User / Password: `nl2sql` / `nl2sql`
