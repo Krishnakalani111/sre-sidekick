@@ -8,8 +8,10 @@
 # Reads secrets from a repo-root .env (gitignored): SIGNOZ_API_KEY, GEMINI_API_KEY
 # or XAI_API_KEY, SLACK_*, DEEPGRAM_API_KEY. With none set, the backend runs in mock mode.
 #
-# SigNoz + the SigNoz MCP server are deployed separately via Foundry (deploy/signoz).
-# Containers reach them on the host: MCP at host.docker.internal:8000, OTLP at :4318.
+# SigNoz + the SigNoz MCP server are deployed separately via Foundry (deploy/signoz),
+# which creates the `signoz-network`. The backend and n8n JOIN that external network
+# and reach SigNoz by service name (signoz-mcp-server:8000, signoz-ingester:4318), so
+# SigNoz must be up FIRST (foundryctl cast) before `docker compose up`.
 services:
   postgres:
     image: postgres:16
@@ -40,10 +42,9 @@ services:
     environment:
       BACKEND_PORT: 3000
       DATABASE_URL: postgres://sidekick:sidekick@postgres:5432/sidekick
-      # Inside the container, the host's SigNoz MCP is reached via
-      # host.docker.internal (NOT localhost). Override with MCP_URL if the
-      # MCP server runs elsewhere / on a shared docker network.
-      MCP_SERVER_URL: ${MCP_URL:-http://host.docker.internal:8000/mcp}
+      # Reached over the shared signoz-network by service name. Override MCP_URL
+      # if the MCP server runs elsewhere.
+      MCP_SERVER_URL: ${MCP_URL:-http://signoz-mcp-server:8000/mcp}
       LLM_PROVIDER: ${LLM_PROVIDER:-mock}
       SIGNOZ_API_KEY: ${SIGNOZ_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -63,6 +64,9 @@ services:
       - "3000:3000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - signoz-network
     restart: unless-stopped
 
   frontend:
@@ -128,15 +132,24 @@ services:
       GENERIC_TIMEZONE: Asia/Kolkata
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       N8N_OTEL_ENABLED: "true"
-      # Send n8n's own telemetry to the host's SigNoz OTLP ingester.
-      N8N_OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4318
+      # n8n's workflow-execution traces -> SigNoz OTLP ingester on signoz-network.
+      # PRODUCTION_ONLY=false so manual/test executions also emit spans.
+      N8N_OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz-ingester:4318
+      N8N_OTEL_TRACES_PRODUCTION_ONLY: "false"
     ports:
       - "5680:5678"
     volumes:
       - n8n-data:/home/node/.n8n
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - signoz-network
     restart: unless-stopped
+
+networks:
+  default: {}
+  signoz-network:
+    external: true
+    name: signoz-network
 
 volumes:
   sidekick-pgdata:
