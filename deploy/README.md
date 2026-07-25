@@ -20,9 +20,29 @@ serverless; give it ~4–8 GB RAM and a data volume.
 > `SIGNOZ-API-KEY` header (create the key in SigNoz UI → Settings → API Keys and
 > set it as the backend's `SIGNOZ_API_KEY`) — no secret is stored in the manifests.
 
-## The Sidekick app
-- **Postgres** (investigation history): `docker compose up -d` at the repo root.
-- **Backend**: `pnpm backend` (needs `SIGNOZ_API_KEY`, `MCP_SERVER_URL`, an LLM key or `LLM_PROVIDER=mock`).
-- **Slack bot**: `cd apps/slack-bot && npm start`.
+## The Sidekick app (run AFTER SigNoz — it joins SigNoz's `signoz-network`)
 
-See `INTEGRATION.md` (contracts) and `apps/backend/DASHBOARD_API.md` (dashboard table API).
+Foundry's `cast` creates the `signoz-network`; the app's root `docker-compose.yml`
+attaches the backend and n8n to it (external network) and reaches SigNoz by
+service name (`signoz-mcp-server:8000`, `signoz-ingester:4318`). So bring SigNoz
+up **first**, then from the repo root:
+
+```bash
+cp .env.example .env      # set SIGNOZ_API_KEY + an LLM key (or LLM_PROVIDER=mock)
+docker compose up -d                    # postgres + backend (:3000) + frontend (:5173)
+docker compose --profile slack up -d    # + Slack bot
+docker compose --profile n8n up -d      # + n8n + seeded nl2sql postgres
+```
+
+**n8n instrumentation:** n8n exports OpenTelemetry traces of its workflow
+executions to SigNoz (`N8N_OTEL_ENABLED=true`, endpoint `signoz-ingester:4318`,
+`N8N_OTEL_TRACES_PRODUCTION_ONLY=false` so manual runs also emit spans). Verified:
+`n8n` appears as a service in SigNoz with `workflow.execute` / `node.execute` spans.
+
+## SigNoz features exercised (for judging)
+- **MCP server** — powers the whole RCA engine (41 tools discovered at runtime).
+- **Alerts** — `scripts/create-alert.ts` (traces-based threshold on checkout 5xx).
+- **Dashboards** — `scripts/create-dashboard.ts` ("Checkout / Payments Health").
+- **Query Builder** — `scripts/create-view.ts` (saved traces view) + the alert/dashboard builder queries.
+
+See `INTEGRATION.md` (client contracts) and `apps/backend/DASHBOARD_API.md` (dashboard table API).
