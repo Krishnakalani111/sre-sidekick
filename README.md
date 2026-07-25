@@ -70,7 +70,6 @@ cd deploy/signoz && foundryctl cast -f casting.yaml     # SigNoz UI :8080, MCP :
 
 # 1. App — all in Docker (postgres + backend)
 cd sre-sidekick
-cp .env.example .env          # set SIGNOZ_API_KEY + an LLM key (or LLM_PROVIDER=mock)
 docker compose up -d          # postgres + backend on :3000
 docker compose --profile slack up -d   # ...also start the Slack bot
 #   dev alternative (hot Node):  docker compose up -d postgres && pnpm install && pnpm backend
